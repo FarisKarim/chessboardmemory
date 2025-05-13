@@ -1,8 +1,12 @@
 import React, { useState } from "react";
 import "./index.css";
 
-const files = ["a", "b", "c", "d", "e", "f", "g", "h"];
-const ranks = [8, 7, 6, 5, 4, 3, 2, 1];
+const files = ["a", "b", "c", "d", "e", "f", "g", "h"]; // left→right from White POV
+const ranks = [8, 7, 6, 5, 4, 3, 2, 1]; // top→bottom from White POV
+
+// ---------- tweak this to scale the entire board ----------
+const SQUARE_SIZE_REM = 4; // one square = 4.5 rem
+// ----------------------------------------------------------
 
 const getRandomSquare = () => {
   const randomFile = files[Math.floor(Math.random() * files.length)];
@@ -11,11 +15,18 @@ const getRandomSquare = () => {
 };
 
 const App = () => {
-  const [mode, setMode] = useState("learn");
+  const [mode, setMode] = useState("learn"); // "learn" | "start"
   const [highlightedSquare, setHighlightedSquare] = useState("");
   const [userGuess, setUserGuess] = useState("");
+  const [flipped, setFlipped] = useState(false); // false = White POV, true = Black POV
 
   const showCoordinates = mode === "learn";
+
+  // arrays to render, reversed when flipped
+  const filesDisplay = flipped ? [...files].reverse() : files;
+  const ranksDisplay = flipped ? [...ranks].reverse() : ranks;
+
+  const boardWidth = `${SQUARE_SIZE_REM * 8}rem`; // used for file‑label rows
 
   const handleLearnMode = () => {
     setMode("learn");
@@ -31,103 +42,110 @@ const App = () => {
 
   const handleGuessSubmit = (e) => {
     e.preventDefault();
-    const guessNormalized = userGuess.trim().toLowerCase();
-    const highlightNormalized = highlightedSquare.toLowerCase();
-
-    if (guessNormalized === highlightNormalized) {
+    if (userGuess.trim().toLowerCase() === highlightedSquare.toLowerCase()) {
       setUserGuess("");
       setHighlightedSquare(getRandomSquare());
     } else {
-      handleLearnMode();
+      handleLearnMode(); // wrong → back to learn mode
     }
   };
 
   return (
-    <div className="flex flex-col min-h-screen  items-center bg-gray-800 p-4">
-      <div className="bg-blue-300 rounded-lg px-4 py-2 flex mb-4 justify-center items-center">
-      <div className="text-2xl font-bold">Chessboard Memorization</div>
-
+    <div className="flex flex-col min-h-screen items-center bg-gray-800 p-4">
+      {/* ── Title ───────────────────────────────────────────── */}
+      <div className="bg-pink-400 rounded-lg px-4 py-2 mb-4">
+        <h1 className="text-2xl text-white font-bold">
+          Chessboard Memorization
+        </h1>
       </div>
 
-      <div className="mb-4 w-1/4 flex justify-between space-x-2">
-        <button
-          onClick={handleLearnMode}
-          className={`px-4 py-2 transition-transform hover:scale-110 rounded ${
-            mode === "learn"
-              ? "bg-blue-600 text-white"
-              : "bg-gray-300 hover:bg-gray-400"
-          }`}
-        >
-          Learn
-        </button>
+      {/* ── Mode / Flip buttons ─────────────────────────────── */}
+      <div className="mb-4 w-1/3 flex justify-around space-x-2">
+        {mode == "start" && (
+          <button
+            onClick={handleLearnMode}
+            className={`px-4 py-2 hover:scale-110 w-24 transition rounded bg-blue-400 text-white
+            }`}
+          >
+            Learn
+          </button>
+        )}
         <button
           onClick={handleStartMode}
-          className={`px-4 py-2 hover:scale-110 transition-transform rounded ${
+          className={`px-4 py-2 hover:scale-110 w-24 font-bold text-white transition rounded ${
             mode === "start"
               ? "bg-green-600 text-white"
-              : "bg-gray-300 hover:bg-gray-400"
+              : "bg-orange-700 hover:bg-gray-400"
           }`}
         >
           Start
         </button>
+        <button
+          onClick={() => setFlipped((f) => !f)}
+          className="px-4 py-2 hover:scale-110 transition w-24 rounded bg-purple-600 text-white"
+        >
+          Flip
+        </button>
       </div>
 
+      {/* ── Guess box (Start mode) ──────────────────────────── */}
       {mode === "start" && (
         <form onSubmit={handleGuessSubmit} className="mb-4 flex space-x-2">
           <input
             type="text"
-            className="border text-white placeholder-gray-400 border-white p-2 rounded"
-            placeholder="e.g. f3"
             value={userGuess}
             onChange={(e) => setUserGuess(e.target.value)}
+            placeholder="e.g. f3"
+            className="border border-white p-2 rounded text-white placeholder-gray-400"
+            autoFocus
           />
           <button
             type="submit"
             className="px-4 py-2 bg-blue-600 text-white rounded"
           >
             Submit Guess
-            <div className="bg-blue-500"></div>
           </button>
         </form>
       )}
 
+      {/* ── Board & coordinates ─────────────────────────────── */}
       <div className="relative flex flex-col items-center">
-        {/* FILE LABELS (top) */}
+        {/* File labels (top) */}
         {showCoordinates && (
-          <div className="grid grid-cols-8 w-7/8 mb-3">
-            {files.map((file) => (
-              <div key={file} className="text-center text-white font-semibold">
-                {file}
-                <div className="bg-blue-500"></div>
+          <div className="grid grid-cols-8 mb-3" style={{ width: boardWidth }}>
+            {filesDisplay.map((f) => (
+              <div key={f} className="text-center text-white font-semibold">
+                {f}
               </div>
             ))}
           </div>
         )}
 
-        <div className="flex border-gray-400">
-          {/* RANK LABELS (left) */}
+        <div className="flex">
+          {/* Rank labels (left) */}
           {showCoordinates && (
             <div className="flex flex-col justify-between mr-4">
-              {ranks.map((rank) => (
+              {ranksDisplay.map((r) => (
                 <div
-                  key={rank}
-                  className="h-12 flex text-white items-center font-semibold"
-                  style={{ height: "2rem" }}
+                  key={r}
+                  className="flex items-center text-white font-semibold"
+                  style={{ height: `${SQUARE_SIZE_REM}rem` }}
                 >
-                  {rank}
+                  {r}
                 </div>
               ))}
             </div>
           )}
 
-          {/* 8x8 BOARD */}
+          {/* 8×8 board */}
           <div className="grid grid-cols-8 grid-rows-8">
-            {ranks.map((rank) =>
-              files.map((file) => {
+            {ranksDisplay.map((rank) =>
+              filesDisplay.map((file) => {
                 const square = `${file}${rank}`;
                 const isDark =
                   (files.indexOf(file) + ranks.indexOf(rank)) % 2 === 1;
                 const isHighlighted = square === highlightedSquare;
+
                 return (
                   <div
                     key={square}
@@ -135,10 +153,13 @@ const App = () => {
                       ${isDark ? "bg-gray-700" : "bg-white"}
                       ${isHighlighted ? "border-4 border-yellow-400" : ""}
                     `}
-                    style={{ width: "3rem", height: "3rem" }}
+                    style={{
+                      width: `${SQUARE_SIZE_REM}rem`,
+                      height: `${SQUARE_SIZE_REM}rem`,
+                    }}
                   >
                     {showCoordinates && (
-                      <div className="absolute top-1 left-1 text-xs text-blue-500">
+                      <div className="absolute top-1 left-1 text-sm text-blue-500">
                         {square}
                       </div>
                     )}
@@ -148,28 +169,28 @@ const App = () => {
             )}
           </div>
 
-          {/* RANK LABELS (right) */}
+          {/* Rank labels (right) */}
           {showCoordinates && (
             <div className="flex flex-col justify-between ml-4">
-              {ranks.map((rank) => (
+              {ranksDisplay.map((r) => (
                 <div
-                  key={rank}
-                  className="h-12 flex items-center text-white font-semibold"
-                  style={{ height: "3rem" }}
+                  key={r}
+                  className="flex items-center text-white font-semibold"
+                  style={{ height: `${SQUARE_SIZE_REM}rem` }}
                 >
-                  {rank}
+                  {r}
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {/* FILE LABELS (bottom) */}
+        {/* File labels (bottom) */}
         {showCoordinates && (
-          <div className="grid grid-cols-8 w-7/8 mt-3">
-            {files.map((file) => (
-              <div key={file} className="text-center text-white font-semibold">
-                {file}
+          <div className="grid grid-cols-8 mt-3" style={{ width: boardWidth }}>
+            {filesDisplay.map((f) => (
+              <div key={f} className="text-center text-white font-semibold">
+                {f}
               </div>
             ))}
           </div>
